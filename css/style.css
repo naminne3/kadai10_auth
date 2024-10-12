@@ -1,0 +1,391 @@
+body {
+    min-height: 100vh;
+    max-width: 100%;
+    margin: 0 auto;
+    width:100%;
+}
+
+
+/* 1. templates/header.php
+ヘッダー部分のデザイン
+ロゴ、ナビゲーションメニュー、検索フォームなどの配置とスタイル */
+
+
+/* ヘッダー */
+
+header {
+    background-color: #E6E5E4; /* ベースカラー */
+    padding: 20px;
+    position: relative; /* ログアウトボタンの位置調整のため */
+    max-width: 100%; /* ヘッダーの幅を指定 */ 
+}
+
+
+.logo a{
+    text-decoration: none; /* リンクの下線を削除 */
+    color: #444949; /* 青色のロゴ */
+    font-family: 'Arial Black', sans-serif; /* ロゴのフォント (Arial Black) */
+    font-size: 30px;
+    letter-spacing: 2px; /* 文字間隔を広げる */
+    display: inline-block;  /* インラインブロック要素にする */
+    text-align: center;
+    margin: 0 auto; /* ロゴを中央寄せに追加 */
+}
+
+/* トップ画像 */
+img {  /* img タグに直接スタイルを適用 */
+  max-width: 100%; /* 画像の最大幅を100%に設定 */
+  height: auto; /* 高さは自動調整 */
+  display: block; /* 画像をブロックレベル要素として扱う */
+  margin: 0; /* 余白をリセット */
+  padding: 0; /* 余白をリセット */
+}
+
+.header-image img { 
+  max-width: 100%; /* 画像の最大幅を100%に設定 */
+  height: auto; /* 高さは自動調整 */
+  display: block; /* 画像をブロックレベル要素として扱う */
+  margin: 0; /* 余白をリセット */
+  padding: 0; /* 余白をリセット */
+  overflow: hidden; /* 飛び出した部分を隠す */
+}
+
+
+
+/* ログイン情報 */
+.login-info {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 12px; /* フォントサイズを小さく */
+    text-align: right; /* 右寄せ */
+    margin: 0; /* 余白をリセット */
+}
+
+
+/* 検索フォーム */
+header form {
+    margin-top: 20px;
+}
+
+header label {
+    /* display: block; ラベルをブロック要素にする */
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+header input[type="text"], 
+header select {
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+header input[type="submit"] {
+    background-color: #769CBF; /* アクセントカラー */
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+/* ハッシュタグ検索フォーム */
+header form:last-of-type {  /* 2つ目のフォーム (ハッシュタグ検索) を選択 */
+    display: flex; /* Flexbox を使用 */
+    align-items: center; /* 垂直方向に中央揃え */
+  }
+  
+  header form:last-of-type input[type="text"] {
+    margin-right: 10px; /* テキストボックスとボタンの間隔 */
+    flex: 1; /* テキストボックスが余白を最大限に利用 */
+  }
+
+
+
+/* 検索エリア */
+.search-area {
+    display: flex;
+    justify-content: space-between; /* 要素間を均等に配置 */
+    margin-bottom: 20px;
+  }
+  
+  .search-box label {
+    margin-right: 10px; /* ラベルと入力フィールドの間隔 */
+  }
+  
+  .search-box input[type="text"],
+  .search-box select {
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+  }
+  
+  .search-box input[type="submit"] {
+    background-color: #769CBF; /* アクセントカラー */
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 3px;
+    cursor: pointer;
+    margin-left: 5px; /* ボタンと入力フィールドの間隔 */
+  }
+
+
+
+
+
+/* 2. templates/footer.php
+フッター部分のデザイン
+著作権表示、リンク、ソーシャルメディアボタンなどの配置とスタイル */
+
+
+/* フッター */
+footer {
+    background-color: #E6E5E4; /* ヘッダーと同じ背景色 */
+    padding: 20px;
+    text-align: center;
+    border-top: 1px solid #ccc; /* 細めの線を引く */
+}
+
+.copyright {
+    font-size: 14px;
+    color: #769CBF; /* アクセントカラー */
+}
+
+
+/* 3. index.php
+記事一覧ページのデザイン
+記事タイトル、投稿日、カテゴリ、ハッシュタグなどの表示方法とスタイル
+カテゴリ選択欄、ハッシュタグ検索フォームなどの配置とスタイル */
+
+/* 記事一覧 */
+
+main{
+    width: 90%;
+    margin: 2rem;
+    padding: 1rem;
+}
+
+
+.article-list {
+    display: block; /* flexbox を無効にする */
+}
+
+.article-list {
+    display: block;
+    width: 80%; /* 記事一覧の幅を調整 */
+    margin: 0 auto; /* 左右のマージンを auto に設定 */
+}
+
+.article-item {
+    width: 80%; /* 幅を100%にする */
+    margin-bottom: 20px;
+    background-color: #fff; /* 記事の背景色 */
+    border: 1px solid #ddd;
+    padding: 20px;
+    border-radius: 5px;
+    clear: both; /* floatの影響をクリア */
+    display: block;  /* !important を削除 */
+}
+
+
+
+.article-item h3 {
+    font-size: 20px;
+    color: #444949; /* テキストカラー */
+    margin-bottom: 10px;
+}
+
+.article-meta {
+    font-size: 14px;
+    color: #769CBF; /* アクセントカラー */
+}
+
+.article-meta span {
+    margin-right: 10px;
+}
+
+/* 検索エリア */
+.search-area {
+    display: block;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.search-area form {
+    width: 60%;
+}
+
+.search-area label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.search-area input[type="text"],
+.search-area select {
+    width: 80%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    box-sizing: border-box; /* paddingとborderを含めた幅にする */
+}
+
+.search-area input[type="submit"] {
+    background-color: #F2D4CF; /* かわいいピンク色 */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 3px;
+    cursor: pointer;
+    margin-top: 5px;
+}
+
+/* 4. article.php
+記事詳細ページのデザイン
+記事タイトル、投稿日、本文、カテゴリ、ハッシュタグなどの表示方法とスタイル
+前後の記事への移動ボタン、いいねボタン、コメントフォーム、コメント一覧などの配置とスタイル */
+
+/* いいね */
+.likes-count {
+    display: inline-block;
+    margin-bottom: 10px;
+}
+
+#like-button {
+    border: none;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+    font-size: 20px;
+}
+
+#like-button:hover {
+    color: #f00; /* ホバー時は赤色 */
+}
+
+#like-button.liked {
+    color: #f00; /* いいね済みは赤色 */
+}
+
+
+
+/* article.php */
+.article-title {
+    font-size: 24px;
+    font-weight: bold;
+    color: #444949;
+    margin: 20px 0;
+    padding-bottom: 20px; /* 下にpaddingを追加 */
+    border-bottom: 1px solid #F2D4CF; /* ピンク色のボーダーを追加 */
+  }
+  
+  .article-meta {
+    font-size: 14px;
+    color: #769CBF;
+    margin-bottom: 20px;
+  }
+  
+  .article-meta span {
+    margin-right: 5px;
+  }
+  
+  .article-content {
+    font-size: 16px;
+    line-height: 1.6em;
+    margin-bottom: 20px;
+    border-top: 1px solid #ddd; /* 上線を追加 */
+    border-bottom: 1px solid #ddd; /* 下線を追加 */
+    padding: 20px 0; /* 上下に padding を追加 */
+  }
+  
+  .article-content p {
+    margin-bottom: 20px;
+  }
+  
+  .article-content img {
+    max-width: 100%;
+    height: auto;
+  }
+  
+  .article-content figcaption {
+    text-align: center;
+    font-size: 14px;
+    color: #769CBF;
+    margin-top: 5px;
+  }
+  
+  .navigation {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  .navigation a {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #769CBF;
+    color: white;
+    border-radius: 5px;
+    text-decoration: none;
+    margin: 0 5px;
+  }
+  
+
+
+/* 関連記事 */
+.related-article {
+  margin-top: 40px;
+  padding: 20px;
+  /* border: 1px solid #ddd; */
+  border-radius: 5px;
+}
+
+.related-article h3 {
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+
+.related-article ul { /* 関連記事のリストにスタイルを適用 */
+  list-style: none; /* リストの "・" を消す */
+  padding: 0; /* リストの左側の余白をリセット */
+}
+
+.related-article li { /* 関連記事の各項目にスタイルを適用 */
+  margin-bottom: 20px; /* 行間を3行空ける (約20px) */
+}
+
+
+/* 5. new.php
+記事投稿フォームのデザイン
+入力フィールド、ラベル、ボタンなどの配置とスタイル */
+
+#title, #naiyou, #memo { 
+  width: 95%; /* 入力ボックスの幅を95%に設定 */
+  padding: 10px; /* 入力ボックス内の上下左右の余白 */
+  box-sizing: border-box; /* paddingとborderを含めた幅にする */
+  border: 1px solid #ccc; /* 枠線のスタイル */
+  border-radius: 5px; /* 角を丸くする */
+  font-size: 16px; /* 文字サイズ */
+}
+
+#naiyou, #memo { 
+  height: 200px; /* 本文とメモの入力ボックスの高さを200pxに設定 */
+  resize: vertical; /* 縦方向だけにリサイズできるように */
+}
+
+/* 6. edit.php
+記事編集フォームのデザイン
+入力フィールド、ラベル、ボタンなどの配置とスタイル */
+
+
+
+/* 7. signup.php
+ユーザー登録フォームのデザイン
+入力フィールド、ラベル、ボタンなどの配置とスタイル */
+
+
+
+/* 8. login.php */
+/* ログインフォームのデザイン
+入力フィールド、ラベル、ボタンなどの配置とスタイル */

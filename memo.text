@@ -1,0 +1,520 @@
+◆ index.php (ブログ記事一覧表示)
+コード説明
+
+$category_id = isset($_GET['category_id']) ? $_GET['category_id'] : null; : URLパラメータからカテゴリIDを取得しています。もし、パラメータがない場合は null を設定します。
+
+$hashtag = isset($_GET['hashtag']) ? $_GET['hashtag'] : null;: URLパラメータからハッシュタグを取得しています。もし、パラメータがない場合は null を設定します。
+
+$sql = "SELECT a.*, c.name AS category_name FROM gs_an_table a LEFT JOIN categories c ON a.category_id = c.id WHERE 1=1 "; : SQL文のベースを作成します。 1=1 は常に真となる条件なので、WHERE句を追加する際にANDで繋げやすくなります。
+
+if (!empty($category_id)) { $sql .= " AND a.category_id = :category_id "; } : もしカテゴリIDが指定されていれば、SQL文にカテゴリ絞り込みの条件を追加します。
+
+if (!empty($hashtag)) { $hashtag = '%' . addcslashes($hashtag, '%_\\') . '%'; $sql .= " AND a.hashtag LIKE :hashtag "; } : もしハッシュタグが指定されていれば、SQL文にハッシュタグ絞り込みの条件を追加します。 addcslashes() は特殊文字をエスケープし、% で囲むことで曖昧検索を可能にしています。
+
+$sql .= " ORDER BY a.id DESC"; : SQL文に、記事IDの降順で並び替えの条件を追加します。
+
+$stmt = $pdo->prepare($sql); : SQL文を準備します。
+
+if (!empty($category_id)) { $stmt->bindValue(':category_id', $category_id, PDO::PARAM_INT); } : もしカテゴリIDが指定されていれば、プレースホルダー :category_id に値をバインドします。
+
+if (!empty($hashtag)) { $stmt->bindValue(':hashtag', $hashtag, PDO::PARAM_STR); } : もしハッシュタグが指定されていれば、プレースホルダー :hashtag に値をバインドします。
+
+$status = $stmt->execute();: SQL文を実行します。
+
+$articles = $stmt->fetchAll(PDO::FETCH_ASSOC); : 実行結果を連想配列として取得します。
+
+try...catch : データベース操作時にエラーが発生した場合に、エラー処理を行うための構文です。
+
+foreach ($articles as $article) : 取得した記事データをループ処理し、各記事のタイトル、投稿日、カテゴリを表示します。
+
+<?php if (!empty($article['category_name'])) : ?> <span class="category">(<?php echo h($article['category_name']); ?>)</span> <?php endif; ?> : カテゴリ名が存在する場合のみ、カテゴリ名を表示します。 h() 関数でHTMLエスケープ処理を行っています。
+
+<?php if (isset($_SESSION["chk_ssid"])) : ?> <p><a href="new.php">新規投稿</a></p> <?php endif; ?> : ログイン中のユーザーにのみ、新規投稿へのリンクを表示します。
+
+<form method="get" action=""> ... </form> : カテゴリ絞り込み用のフォームです。GETメソッドで自分自身 (index.php) にリクエストを送信します。
+
+<form method="get" action=""> ... </form> : ハッシュタグ検索用のフォームです。GETメソッドで自分自身 (index.php) にリクエストを送信します。
+
+◆ article.php (記事詳細表示)
+コード説明
+
+$id = $_GET["id"]; : URLのクエリパラメータから記事IDを取得します。
+
+$stmt = $pdo->prepare("SELECT a.*, c.name AS category_name FROM gs_an_table a LEFT JOIN categories c ON a.category_id = c.id WHERE a.id = :id"); : 記事データを取得するSQL文を準備します。categories テーブルを結合することで、カテゴリ名も取得しています。
+
+$stmt->bindValue(':id', $id, PDO::PARAM_INT);: プレースホルダー :id に記事IDをバインドします。
+
+$status = $stmt->execute(); : SQL文を実行します。
+
+$article = $stmt->fetch(PDO::FETCH_ASSOC); : 実行結果を1件取得し、連想配列に格納します。
+
+$current_id = $article['id']; : 現在の記事IDを取得します。
+
+$stmt = $pdo->prepare("SELECT id, title FROM gs_an_table WHERE id < :current_id ORDER BY id DESC LIMIT 1"); : 前の記事を取得するSQL文を準備します。
+
+$stmt->bindValue(':current_id', $current_id, PDO::PARAM_INT);: プレースホルダー :current_id に現在の記事IDをバインドします。
+
+$stmt->execute(); : SQL文を実行します。
+
+$prev_article = $stmt->fetch(PDO::FETCH_ASSOC);: 実行結果を1件取得し、連想配列に格納します。
+
+$stmt = $pdo->prepare("SELECT id, title FROM gs_an_table WHERE id > :current_id ORDER BY id ASC LIMIT 1"); : 次の記事を取得するSQL文を準備します。
+
+$stmt->bindValue(':current_id', $current_id, PDO::PARAM_INT);: プレースホルダー :current_id に現在の記事IDをバインドします。
+
+$stmt->execute(); : SQL文を実行します。
+
+$next_article = $stmt->fetch(PDO::FETCH_ASSOC); : 実行結果を1件取得し、連想配列に格納します。
+
+<h2><?php echo h($article['title']); ?></h2> : 記事のタイトルを表示します。h() 関数でHTMLエスケープ処理を行っています。
+
+<p>投稿日: <?php echo h($article['indate']); ?></p> : 記事の投稿日を表示します。
+
+<p><?php echo h($article['naiyou']); ?></p> : 記事の内容を表示します。
+
+<?php if (!empty($article['hashtag'])) : ?> ... <?php endif; ?> : ハッシュタグが存在する場合のみ、ハッシュタグを表示します。
+
+<?php if (!empty($article['category_name'])) : ?> ... <?php endif; ?> : カテゴリ名が存在する場合のみ、カテゴリ名を表示します。
+
+<?php if (isset($_SESSION["kanri_flg"]) && $_SESSION["kanri_flg"] == 1) : ?> ... <?php endif; ?> : 管理者ユーザーの場合のみ、編集・削除リンクを表示します。
+
+<div class="navigation"> ... </div> : 前後の記事への移動ボタンを表示する部分です。前後の記事が存在する場合のみ、リンクを表示します。
+
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM likes WHERE article_id = :article_id"); : いいね数を取得するSQL文を準備します。
+
+$stmt->bindValue(':article_id', $id, PDO::PARAM_INT);: プレースホルダー :article_id に記事IDをバインドします。
+
+$stmt->execute();: SQL文を実行します。
+
+$likes_count = $stmt->fetchColumn();: 実行結果 (いいね数) を取得します。
+
+$liked = false;: いいね済みかどうかを表す変数を初期化します。
+
+if (isset($_SESSION["chk_ssid"])) { ... }: ログインしている場合、既にいいね済みかどうかを判定します。
+
+<p>いいね: <span id="likes-count"><?php echo $likes_count; ?></span></p> : いいね数を表示します。
+
+<button id="like-button" ...> ... </button> : いいねボタンを表示します。いいね済みかどうかによってクラス (liked) を切り替えています。
+
+$stmt = $pdo->prepare("SELECT * FROM comments WHERE article_id = :article_id ORDER BY created_at ASC");: コメントデータを取得するSQL文を準備します。
+
+$stmt->bindValue(':article_id', $id, PDO::PARAM_INT); : プレースホルダー :article_id に記事IDをバインドします。
+
+$status = $stmt->execute(); : SQL文を実行します。
+
+$comments = $stmt->fetchAll(PDO::FETCH_ASSOC); : 実行結果を連想配列として取得します。
+
+<?php if (count($comments) > 0) : ?> ... <?php else : ?> ... <?php endif; ?> : コメントがある場合はコメント一覧を表示し、ない場合は「コメントはまだありません。」と表示します。
+
+foreach ($comments as $comment) : 取得したコメントデータをループ処理し、各コメントの投稿者名、投稿日時、コメント内容を表示します。
+
+<?php if (isset($_SESSION["chk_ssid"]) && $_SESSION["name"] == $comment['name']) : ?> ... <?php endif; ?> : ログインユーザーが自分で投稿したコメントの場合のみ、編集・削除リンクを表示します。
+
+◆ new.php (記事投稿画面)
+コード説明
+
+sschk(); : セッションチェックを行います。ログインしていない場合はアクセスできません。
+
+<form method="post" action="insert.php"> : 記事投稿用のフォームです。POSTメソッドで insert.php にデータを送信します。
+
+<label for="title">タイトル:</label> : タイトル入力欄のラベルです。
+
+<input type="text" id="title" name="title" required> : タイトル入力欄です。
+
+<label for="naiyou">本文:</label> : 本文入力欄のラベルです。
+
+<textarea id="naiyou" name="naiyou" rows="10" required></textarea> : 本文入力欄です。
+
+<label for="hashtag">ハッシュタグ:</label> : ハッシュタグ入力欄のラベルです。
+
+<input type="text" id="hashtag" name="hashtag"> : ハッシュタグ入力欄です。
+
+<label for="memo">メモ:</label> : メモ入力欄のラベルです。
+
+<textarea id="memo" name="memo" rows="4" cols="40"></textarea> : メモ入力欄です。
+
+<label for="category">カテゴリ:</label> : カテゴリ選択欄のラベルです。
+
+<select id="category" name="category_id"> ... </select> : カテゴリ選択欄です。データベースからカテゴリ一覧を取得し、選択肢として表示します。
+
+<input type="submit" value="投稿"> : 投稿ボタンです。
+
+◆ edit.php (記事編集画面)
+コード説明
+
+sschk(); : セッションチェックを行います。ログインしていない場合はアクセスできません。
+
+$id = $_GET["id"]; : URLのクエリパラメータから記事IDを取得します。
+
+$stmt = $pdo->prepare("SELECT * FROM gs_an_table WHERE id = :id"); : 記事データを取得するSQL文を準備します。
+
+$stmt->bindValue(':id', $id, PDO::PARAM_INT);: プレースホルダー :id に記事IDをバインドします。
+
+$status = $stmt->execute(); : SQL文を実行します。
+
+$article = $stmt->fetch(PDO::FETCH_ASSOC); : 実行結果を1件取得し、連想配列に格納します。
+
+<form method="post" action="https://lifecareerdesign.sakura.ne.jp/kadai09_php/update.php"> : 記事編集用のフォームです。POSTメソッドで update.php にデータを送信します。
+
+<input type="text" id="title" name="title" value="<?php echo h($article['title']); ?>" required> : タイトル入力欄です。編集前の値が表示されます。
+
+<textarea id="naiyou" name="naiyou" rows="10" required><?php echo h($article['naiyou']); ?></textarea> : 本文入力欄です。編集前の値が表示されます。
+
+<input type="text" id="hashtag" name="hashtag" value="<?php echo h($article['hashtag']); ?>"> : ハッシュタグ入力欄です。編集前の値が表示されます。
+
+<textarea id="memo" name="memo" rows="4" cols="40"><?php echo h($article['memo']); ?></textarea> : メモ入力欄です。編集前の値が表示されます。
+
+<select id="category" name="category_id"> ... </select> : カテゴリ選択欄です。データベースからカテゴリ一覧を取得し、編集前のカテゴリが選択された状態で表示します。
+
+<input type="hidden" name="id" value="<?php echo h($article['id']); ?>"> : 記事IDを hidden フィールドで送信します。
+
+<input type="submit" value="更新"> : 更新ボタンです。
+
+◆ insert.php (記事登録処理)
+コード説明
+
+sschk(); : セッションチェックを行います。ログインしていない場合はアクセスできません。
+
+$title = $_POST["title"]; : POSTされたタイトルを取得します。
+
+$naiyou = $_POST["naiyou"]; : POSTされた本文を取得します。
+
+$hashtag = $_POST["hashtag"]; : POSTされたハッシュタグを取得します。
+
+$hashtag = "#" . str_replace(" ", " #", $hashtag); : ハッシュタグの先頭に # を付け、スペースを # に置換します。
+
+$memo = $_POST["memo"]; : POSTされたメモを取得します。
+
+$category_id = $_POST["category_id"]; : POSTされたカテゴリIDを取得します。
+
+$stmt = $pdo->prepare("INSERT INTO gs_an_table(title, naiyou, hashtag, memo, indate, category_id) VALUES (:title, :naiyou, :hashtag, :memo, sysdate(), :category_id)"); : 記事データを登録するSQL文を準備します。
+
+$stmt->bindValue(':title', $title, PDO::PARAM_STR); : プレースホルダー :title にタイトルをバインドします。
+
+$stmt->bindValue(':naiyou', $naiyou, PDO::PARAM_STR); : プレースホルダー :naiyou に本文をバインドします。
+
+$stmt->bindValue(':hashtag', $hashtag, PDO::PARAM_STR); : プレースホルダー :hashtag にハッシュタグをバインドします。
+
+$stmt->bindValue(':memo', $memo, PDO::PARAM_STR); : プレースホルダー :memo にメモをバインドします。
+
+$stmt->bindValue(':category_id', $category_id, PDO::PARAM_INT);: プレースホルダー :category_id にカテゴリIDをバインドします。
+
+$status = $stmt->execute(); : SQL文を実行します。
+
+if ($status == false) { ... } else { ... } : 登録が成功した場合は index.php にリダイレクトし、失敗した場合はエラー処理を行います。
+
+◆ update.php (記事更新処理)
+コード説明
+
+sschk(); : セッションチェックを行います。ログインしていない場合はアクセスできません。
+
+$id = $_POST["id"]; : POSTされた記事IDを取得します。
+
+$title = $_POST["title"]; : POSTされたタイトルを取得します。
+
+$naiyou = $_POST["naiyou"]; : POSTされた本文を取得します。
+
+$hashtag = $_POST["hashtag"]; : POSTされたハッシュタグを取得します。
+
+$hashtag = "#" . str_replace(" ", " #", $hashtag); : ハッシュタグの先頭に # を付け、スペースを # に置換します。
+
+$memo = $_POST["memo"]; : POSTされたメモを取得します。
+
+$category_id = $_POST["category_id"]; : POSTされたカテゴリIDを取得します。
+
+$stmt = $pdo->prepare("UPDATE gs_an_table SET title = :title, naiyou = :naiyou, hashtag = :hashtag, memo = :memo, hashtag = :hashtag, category_id = :category_id WHERE id = :id"); : 記事データを更新するSQL文を準備します。
+
+$stmt->bindValue(':title', $title, PDO::PARAM_STR); : プレースホルダー :title にタイトルをバインドします。
+
+$stmt->bindValue(':naiyou', $naiyou, PDO::PARAM_STR); : プレースホルダー :naiyou に本文をバインドします。
+
+$stmt->bindValue(':hashtag', $hashtag, PDO::PARAM_STR); : プレースホルダー :hashtag にハッシュタグをバインドします。
+
+$stmt->bindValue(':memo', $memo, PDO::PARAM_STR); : プレースホルダー :memo にメモをバインドします。
+
+$stmt->bindValue(':category_id', $category_id, PDO::PARAM_INT);: プレースホルダー :category_id にカテゴリIDをバインドします。
+
+$stmt->bindValue(':id', $id, PDO::PARAM_INT); : プレースホルダー :id に記事IDをバインドします。
+
+$status = $stmt->execute(); : SQL文を実行します。
+
+if ($status == false) { ... } else { ... } : 更新が成功した場合は index.php にリダイレクトし、失敗した場合はエラー処理を行います。
+
+◆ delete.php (記事削除処理)
+コード説明
+
+sschk(); : セッションチェックを行います。ログインしていない場合はアクセスできません。
+
+$id = $_GET["id"]; : URLのクエリパラメータから記事IDを取得します。
+
+$stmt = $pdo->prepare("DELETE FROM gs_an_table WHERE id=:id"); : 記事データを削除するSQL文を準備します。
+
+$stmt->bindValue(':id', $id, PDO::PARAM_INT); : プレースホルダー :id に記事IDをバインドします。
+
+$status = $stmt->execute(); : SQL文を実行します。
+
+if ($status == false) { ... } else { ... } : 削除が成功した場合は select.php にリダイレクトし、失敗した場合はエラー処理を行います。
+
+◆ signup.php (ユーザー登録画面)
+コード説明
+
+<form method="post" action="https://lifecareerdesign.sakura.ne.jp/kadai09_php/user_insert.php"> : ユーザー登録用のフォームです。POSTメソッドで user_insert.php にデータを送信します。
+
+<label>名前：<input type="text" name="name" required></label> : 名前入力欄です。
+
+<label>Login ID：<input type="text" name="lid" required></label> : ログインID入力欄です。
+
+<label>Login PW<input type="password" name="lpw" required></label> : パスワード入力欄です。
+
+<label>管理FLG： ... </label> : 管理者フラグを選択するラジオボタンです。
+
+<input type="submit" value="送信"> : 送信ボタンです。
+
+◆ user_insert.php (ユーザー登録処理)
+コード説明
+
+session_start(); : セッションを開始します。
+
+$name = filter_input( INPUT_POST, "name" ); : POSTされた名前を取得し、サニタイズします。
+
+$lid = filter_input( INPUT_POST, "lid" ); : POSTされたログインIDを取得し、サニタイズします。
+
+$lpw = filter_input( INPUT_POST, "lpw" ); : POSTされたパスワードを取得し、サニタイズします。
+
+$kanri_flg = filter_input( INPUT_POST, "kanri_flg" ); : POSTされた管理者フラグを取得し、サニタイズします。
+
+$lpw = password_hash($lpw, PASSWORD_DEFAULT); : パスワードをハッシュ化します。
+
+$sql = "INSERT INTO gs_user_table(name,lid,lpw,kanri_flg,life_flg)VALUES(:name,:lid,:lpw,:kanri_flg,0)"; : ユーザーデータを登録するSQL文です。
+
+$stmt = $pdo->prepare($sql); : SQL文を準備します。
+
+$stmt->bindValue(':name', $name, PDO::PARAM_STR); : プレースホルダー :name に名前をバインドします。
+
+$stmt->bindValue(':lid', $lid, PDO::PARAM_STR); : プレースホルダー :lid にログインIDをバインドします。
+
+$stmt->bindValue(':lpw', $lpw, PDO::PARAM_STR); : プレースホルダー :lpw にパスワードをバインドします。
+
+$stmt->bindValue(':kanri_flg', $kanri_flg, PDO::PARAM_INT); : プレースホルダー :kanri_flg に管理者フラグをバインドします。
+
+$status = $stmt->execute(); : SQL文を実行します。
+
+if ($status == false) { ... } else { ... } : 登録が成功した場合は https://lifecareerdesign.sakura.ne.jp/kadai09_php/login.php にリダイレクトし、失敗した場合はエラー処理を行います。
+
+◆ login.php (ログイン画面)
+コード説明
+
+<form name="form1" action="login_act.php" method="post"> : ログイン用のフォームです。POSTメソッドで login_act.php にデータを送信します。
+
+ID:<input type="text" name="lid" required> : ログインID入力欄です。
+
+PW:<input type="password" name="lpw" required> : パスワード入力欄です。
+
+<input type="submit" value="ログイン"> : ログインボタンです。
+
+◆ login_act.php (ログイン処理)
+コード説明
+
+$lid = $_POST["lid"]; : POSTされたログインIDを取得します。
+
+$lpw = $_POST["lpw"]; : POSTされたパスワードを取得します。
+
+$stmt = $pdo->prepare("SELECT * FROM gs_user_table WHERE lid = :lid"); : ユーザーデータを取得するSQL文を準備します。
+
+$stmt->bindValue(':lid', $lid, PDO::PARAM_STR);: プレースホルダー :lid にログインIDをバインドします。
+
+$status = $stmt->execute(); : SQL文を実行します。
+
+$user = $stmt->fetch(PDO::FETCH_ASSOC); : 実行結果を1件取得し、連想配列に格納します。
+
+if ($user && password_verify($lpw, $user["lpw"])) { ... } else { ... } : 入力されたパスワードとハッシュ化されたパスワードを比較し、一致すればログイン成功、そうでなければログイン失敗となります。
+
+ログイン成功時:
+
+$_SESSION["chk_ssid"] = session_id(); : セッションIDをセッション変数に保存します。
+
+$_SESSION["kanri_flg"] = $user['kanri_flg']; : 管理者フラグをセッション変数に保存します。
+
+$_SESSION["name"] = $user['name']; : ユーザー名をセッション変数に保存します。
+
+redirect("index.php"); : index.php にリダイレクトします。
+
+ログイン失敗時:
+
+$_SESSION["error_message"] = "ログインIDまたはパスワードが間違っています。"; : エラーメッセージをセッション変数に保存します。
+
+redirect("login.php"); : login.php にリダイレクトします。
+
+◆ logout.php (ログアウト処理)
+コード説明
+
+$_SESSION = array(); : セッション変数を全て削除します。
+
+if (isset($_COOKIE[session_name()])) { setcookie(session_name(), '', time()-42000, '/'); } : セッションクッキーを削除します。
+
+session_destroy(); : セッションを破棄します。
+
+redirect("login.php"); : login.php にリダイレクトします。
+
+◆ comment_insert.php (コメント登録処理)
+コード説明
+
+$article_id = $_POST["article_id"]; : POSTされた記事IDを取得します。
+
+$name = htmlspecialchars($_POST["name"], ENT_QUOTES, 'UTF-8'); : POSTされた名前を取得し、サニタイズします。
+
+$comment = htmlspecialchars($_POST["comment"], ENT_QUOTES, 'UTF-8'); : POSTされたコメントを取得し、サニタイズします。
+
+$stmt = $pdo->prepare("INSERT INTO comments(article_id, name, comment) VALUES (:article_id, :name, :comment)"); : コメントデータを登録するSQL文を準備します。
+
+$stmt->bindValue(':article_id', $article_id, PDO::PARAM_INT); : プレースホルダー :article_id に記事IDをバインドします。
+
+$stmt->bindValue(':name', $name, PDO::PARAM_STR); : プレースホルダー :name に名前をバインドします。
+
+$stmt->bindValue(':comment', $comment, PDO::PARAM_STR); : プレースホルダー :comment にコメントをバインドします。
+
+$status = $stmt->execute(); : SQL文を実行します。
+
+if ($status == false) { ... } else { ... } : 登録が成功した場合は article.php?id={$article_id} にリダイレクトし、失敗した場合はエラー処理を行います。
+
+◆ comment_edit.php (コメント編集画面)
+コード説明
+
+sschk(); : セッションチェックを行います。ログインしていない場合はアクセスできません。
+
+$id = $_GET["id"]; : URLのクエリパラメータからコメントIDを取得します。
+
+$stmt = $pdo->prepare("SELECT * FROM comments WHERE id = :id"); : コメントデータを取得するSQL文を準備します。
+
+$stmt->bindValue(':id', $id, PDO::PARAM_INT);: プレースホルダー :id にコメントIDをバインドします。
+
+$status = $stmt->execute(); : SQL文を実行します。
+
+$comment = $stmt->fetch(PDO::FETCH_ASSOC); : 実行結果を1件取得し、連想配列に格納します。
+
+<form method="post" action="comment_update.php"> : コメント編集用のフォームです。POSTメソッドで comment_update.php にデータを送信します。
+
+<input type="hidden" name="id" value="<?php echo h($comment['id']); ?>"> : コメントIDを hidden フィールドで送信します。
+
+<input type="hidden" name="article_id" value="<?php echo h($comment['article_id']); ?>"> : 記事IDを hidden フィールドで送信します。
+
+<label for="comment">コメント:</label> : コメント入力欄のラベルです。
+
+<textarea id="comment" name="comment" rows="5" required><?php echo h($comment['comment']); ?></textarea> : コメント入力欄です。編集前の値が表示されます。
+
+<input type="submit" value="更新"> : 更新ボタンです。
+
+◆ comment_update.php (コメント更新処理)
+コード説明
+
+sschk(); : セッションチェックを行います。ログインしていない場合はアクセスできません。
+
+$id = $_POST["id"]; : POSTされたコメントIDを取得します。
+
+$article_id = $_POST["article_id"]; : POSTされた記事IDを取得します。
+
+$comment = htmlspecialchars($_POST["comment"], ENT_QUOTES, 'UTF-8'); : POSTされたコメントを取得し、サニタイズします。
+
+$stmt = $pdo->prepare("UPDATE comments SET comment = :comment WHERE id = :id"); : コメントデータを更新するSQL文を準備します。
+
+$stmt->bindValue(':comment', $comment, PDO::PARAM_STR); : プレースホルダー :comment にコメントをバインドします。
+
+$stmt->bindValue(':id', $id, PDO::PARAM_INT); : プレースホルダー :id にコメントIDをバインドします。
+
+$status = $stmt->execute(); : SQL文を実行します。
+
+if ($status == false) { ... } else { ... } : 更新が成功した場合は article.php?id={$article_id} にリダイレクトし、失敗した場合はエラー処理を行います。
+
+◆ comment_delete.php (コメント削除処理)
+コード説明
+
+sschk(); : セッションチェックを行います。ログインしていない場合はアクセスできません。
+
+$id = $_GET["id"]; : URLのクエリパラメータからコメントIDを取得します。
+
+$article_id = $_GET["article_id"]; : URLのクエリパラメータから記事IDを取得します。
+
+$stmt = $pdo->prepare("DELETE FROM comments WHERE id = :id"); : コメントデータを削除するSQL文を準備します。
+
+$stmt->bindValue(':id', $id, PDO::PARAM_INT); : プレースホルダー :id にコメントIDをバインドします。
+
+$status = $stmt->execute(); : SQL文を実行します。
+
+if ($status == false) { ... } else { ... } : 削除が成功した場合は article.php?id={$article_id} にリダイレクトし、失敗した場合はエラー処理を行います。
+
+◆ like_process.php (いいね処理)
+コード説明
+
+$article_id = $_POST['article_id']; : POSTされた記事IDを取得します。
+
+$user_id = isset($_SESSION["chk_ssid"]) ? session_id() : null; : ログインしている場合はセッションIDを、そうでない場合は null をユーザーIDとして設定します。
+
+$stmt = $pdo->prepare("SELECT * FROM likes WHERE article_id = :article_id AND user_id = :user_id"); : 既にいいね済みかどうかを確認するSQL文を準備します。
+
+$stmt->bindValue(':article_id', $article_id, PDO::PARAM_INT);: プレースホルダー :article_id に記事IDをバインドします。
+
+$stmt->bindValue(':user_id', $user_id, PDO::PARAM_STR);: プレースホルダー :user_id にユーザーIDをバインドします。
+
+$stmt->execute(); : SQL文を実行します。
+
+if ($stmt->fetch()) { ... } else { ... } : 既にいいね済みの場合は likes テーブルからレコードを削除し、そうでない場合はレコードを追加します。
+
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM likes WHERE article_id = :article_id"); : いいね数を取得するSQL文を準備します。
+
+$stmt->bindValue(':article_id', $article_id, PDO::PARAM_INT);: プレースホルダー :article_id に記事IDをバインドします。
+
+$stmt->execute(); : SQL文を実行します。
+
+$likes_count = $stmt->fetchColumn(); : 実行結果 (いいね数) を取得します。
+
+$response = ['success' => true, 'message' => '...', 'likesCount' => $likes_count]; : レスポンス用の配列を作成します。
+
+header('Content-Type: application/json'); : レスポンスヘッダーにContent-TypeをJSON形式に設定します。
+
+echo json_encode($response); : レスポンスをJSON形式で出力します。
+
+◆ like.js (いいねボタンのJavaScript)
+コード説明
+
+window.addEventListener('DOMContentLoaded', (event) => { ... }); : DOMの読み込みが完了してから処理を実行します。
+
+document.getElementById('like-button').addEventListener('click', function() { ... }); : いいねボタンがクリックされたら処理を実行します。
+
+const button = this; : クリックされたボタン要素を取得します。
+
+const articleId = button.dataset.articleId; : ボタンの data-article-id 属性から記事IDを取得します。
+
+const xhr = new XMLHttpRequest();: XMLHttpRequestオブジェクトを作成します。
+
+xhr.open('POST', 'like_process.php', true); : like_process.php にPOSTリクエストを送信する準備をします。
+
+xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');: リクエストヘッダーを設定します。
+
+xhr.onload = function() { ... }; : レスポンスを受け取った時の処理を定義します。
+
+if (this.status === 200) { ... } else { ... } : レスポンスのHTTPステータスコードが200 (成功) の場合のみ処理を実行します。
+
+const response = JSON.parse(this.responseText); : レスポンスをJSON形式にパースします。
+
+if (response.success) { ... } else { ... } : like_process.php から返された success フラグが true の場合のみ処理を実行します。
+
+document.getElementById('likes-count').textContent = response.likesCount; : いいね数を更新します。
+
+button.classList.toggle('liked'); : いいねボタンのクラス (liked) を切り替えます。
+
+location.reload(); : ページをリロードします。
+
+xhr.send('article_id=' + articleId); : リクエストを送信します。
+
+◆ includes/db_connect.php (データベース接続処理)
+コード説明
+
+$db_name = "***"; : データベース名を設定します。
+
+$db_id = "***"; : データベースユーザー名を設定します。
+
+$db_pw = "***"; : データベースパスワードを設定します。
+
+$db_host = "***"; : データベースホスト名を設定します。
+
+`$pdo = new PDO('mysql:dbname='.$db_name.';charset=utf8
